@@ -25,7 +25,7 @@ unsigned int natom;
 unsigned int ncart;
 std::vector<size_t> shell2bf;
 std::vector<long> shell2atom;
-int nthreads;
+int nthreads = 1;
 
 // These lookup arrays are for mapping Libint's computed shell-set integrals and integral derivatives to the proper index 
 // in the full OEI/TEI array or derivative array.
@@ -68,7 +68,6 @@ void initialize(std::string xyzfilename, std::string basis_name) {
     shell2bf = obs.shell2bf(); // maps shell index to basis function index
     shell2atom = obs.shell2atom(atoms); // maps shell index to atom index
     // Get number of OMP threads
-    nthreads = 1;
 #ifdef _OPENMP
     nthreads = omp_get_max_threads();
 #endif

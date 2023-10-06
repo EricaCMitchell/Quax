@@ -11,11 +11,10 @@ jax.config.update("jax_enable_x64", True)
 
 class OEI(object):
 
-    def __init__(self, basis_name, xyz_path, max_deriv_order, mode):
+    def __init__(self, basis_set, xyz_path, max_deriv_order, mode):
         with open(xyz_path, 'r') as f:
             tmp = f.read()
         molecule = psi4.core.Molecule.from_string(tmp, 'xyz+')
-        basis_set = psi4.core.BasisSet.build(molecule, 'BASIS', basis_name, puream=0)
         natoms = molecule.natom()
         nbf = basis_set.nbf()
 

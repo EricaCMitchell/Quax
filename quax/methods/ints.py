@@ -15,49 +15,47 @@ from ..integrals import OEI
 from ..integrals import libint_interface
      
 
-def compute_integrals(geom, basis_name, xyz_path, nuclear_charges, charge, deriv_order, options):
+def compute_integrals(geom, basis_set, xyz_path, nuclear_charges, charge, deriv_order, options):
     # Load integral algo, decides to compute integrals in memory or use disk 
     algo = options['integral_algo']
+    basis_name = basis_set.name()
+    libint_interface.initialize(xyz_path, basis_name)
+    print(type(basis_set))
 
     if algo == 'libint_disk':
         # Check disk for currently existing integral derivatives
-        check = check_disk(geom,basis_name,xyz_path,deriv_order)
+        check = check_disk(geom, basis_set, xyz_path, deriv_order)
 
-        tei_obj = TEI(basis_name, xyz_path, deriv_order, 'disk')
-        oei_obj = OEI(basis_name, xyz_path, deriv_order, 'disk')
+        tei_obj = TEI(basis_set, xyz_path, deriv_order, 'disk')
+        oei_obj = OEI(basis_set, xyz_path, deriv_order, 'disk')
         # If disk integral derivs are right, nothing to do
         if check:
-            libint_interface.initialize(xyz_path, basis_name)
             S = oei_obj.overlap(geom)
             T = oei_obj.kinetic(geom)
             V = oei_obj.potential(geom)
             G = tei_obj.tei(geom)
-            libint_interface.finalize()
         else:
-            libint_interface.initialize(xyz_path, basis_name)
             libint_interface.oei_deriv_disk(deriv_order)
             libint_interface.eri_deriv_disk(deriv_order)
             S = oei_obj.overlap(geom)
             T = oei_obj.kinetic(geom)
             V = oei_obj.potential(geom)
             G = tei_obj.tei(geom)
-            libint_interface.finalize()
 
     else:
-        libint_interface.initialize(xyz_path, basis_name)
         # Precompute TEI derivatives
-        tei_obj = TEI(basis_name, xyz_path, deriv_order, 'core')
-        oei_obj = OEI(basis_name, xyz_path, deriv_order, 'core')
+        tei_obj = TEI(basis_set, xyz_path, deriv_order, 'core')
+        oei_obj = OEI(basis_set, xyz_path, deriv_order, 'core')
         # Compute integrals
         S = oei_obj.overlap(geom)
         T = oei_obj.kinetic(geom)
         V = oei_obj.potential(geom)
         G = tei_obj.tei(geom)
-        libint_interface.finalize()
 
+    libint_interface.finalize()
     return S, T, V, G
 
-def check_disk(geom,basis_name,xyz_path,deriv_order,address=None):
+def check_disk(geom, basis_set, xyz_path, deriv_order, address=None):
     # TODO need to check geometry and basis set name in addition to nbf
     # First check TEI's, then OEI's, return separately, check separately in compute_integrals
     correct_int_derivs = False
@@ -69,7 +67,6 @@ def check_disk(geom,basis_name,xyz_path,deriv_order,address=None):
         with open(xyz_path, 'r') as f:
             tmp = f.read()
         molecule = psi4.core.Molecule.from_string(tmp, 'xyz+')
-        basis_set = psi4.core.BasisSet.build(molecule, 'BASIS', basis_name, puream=0)
         nbf = basis_set.nbf()
         # Check if there are `deriv_order` datasets in the eri file
         correct_deriv_order = len(erifile) == deriv_order
@@ -91,7 +88,6 @@ def check_disk(geom,basis_name,xyz_path,deriv_order,address=None):
         with open(xyz_path, 'r') as f:
             tmp = f.read()
         molecule = psi4.core.Molecule.from_string(tmp, 'xyz+')
-        basis_set = psi4.core.BasisSet.build(molecule, 'BASIS', basis_name, puream=0)
         nbf = basis_set.nbf()
         sample_dataset_name = list(oeifile.keys())[0]
         correct_nbf = oeifile[sample_dataset_name].shape[0] == nbf

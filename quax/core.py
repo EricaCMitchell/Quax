@@ -74,7 +74,6 @@ def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=N
     mult = molecule.multiplicity()
     charge = molecule.molecular_charge()
     nuclear_charges = jnp.asarray([molecule.charge(i) for i in range(geom2d.shape[0])])
-    args = (geom, basis_name, xyz_path, nuclear_charges, charge, options)
 
     basis_set = psi4.core.BasisSet.build(molecule, 'BASIS', basis_name, puream=0)
     nbf = basis_set.nbf()
@@ -82,6 +81,7 @@ def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=N
     print("Number of basis functions: ", nbf)
 
     # Energy and full derivative tensor evaluations
+    args = (geom, basis_set, xyz_path, nuclear_charges, charge, options)
     if not partial:
         # Create energy evaluation function
         if method == 'scf' or method == 'hf' or method == 'rhf':
