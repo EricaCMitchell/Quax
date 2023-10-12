@@ -19,7 +19,7 @@ def compute_integrals(geom, basis_set, xyz_path, nuclear_charges, charge, deriv_
     # Load integral algo, decides to compute integrals in memory or use disk 
     algo = options['integral_algo']
     basis_name = basis_set.name()
-    libint_interface.initialize(xyz_path, basis_name)
+    libint_interface.initialize(xyz_path, basis_name, basis_name, basis_name, basis_name)
     print(type(basis_set))
 
     if algo == 'libint_disk':
