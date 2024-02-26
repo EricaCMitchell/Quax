@@ -8,7 +8,7 @@ import numpy as np
 import os
 import h5py
 
-from .methods.basis_utils import build_RIBS
+from .integrals import libint_interface
 from .methods.hartree_fock import restricted_hartree_fock
 from .methods.mp2 import restricted_mp2
 from .methods.mp2f12 import restricted_mp2_f12
@@ -33,14 +33,18 @@ def check_options(options):
         Dictionary of options controlling electronic structure code parameters
     """
     # Add all additional keywords to here
-    keyword_options = {'maxit': 100,
+    keyword_options = {
+                       'charge': 0,
+                       'multiplicity': 1,
+                       'maxit': 100,
                        'damping': False,
                        'damp_factor': 0.5,
                        'spectral_shift': True,
                        'integral_algo': 'libint_core',
                        'ints_tolerance': 1.0e-14,
                        'freeze_core': False,
-                       'beta': 1.0
+                       'beta': 1.0,
+                       'threads': 1
                       }
 
     for key in options.keys():
@@ -54,7 +58,7 @@ def check_options(options):
             print("{} keyword option not recognized.".format(key))
     return keyword_options
 
-def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=None):
+def compute(xyz_path, basis_name, method, options=None, deriv_order=0, partial=None):
     """
     General function for computing energies, derivatives, and partial derivatives.
     """
@@ -66,28 +70,27 @@ def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=N
     else:
         options = check_options({})
     print("Using integral method: {}".format(options['integral_algo']))
-    print("Number of OMP Threads: {}".format(psi4.core.get_num_threads()))
+    libint_interface.set_num_threads(options['threads'])
+    print("Number of OMP Threads: {}".format(libint_interface.get_num_threads()))
 
     # Load molecule data
-    geom2d = np.asarray(molecule.geometry())
-    geom_list = geom2d.reshape(-1).tolist()
-    geom = jnp.asarray(geom2d.flatten())
-    dim = geom.reshape(-1).shape[0]
-    xyz_file_name = "geom.xyz"
-    molecule.save_xyz_file(xyz_file_name, True)
-    xyz_path = os.path.abspath(os.getcwd()) + "/" + xyz_file_name
-    mult = molecule.multiplicity()
-    charge = molecule.molecular_charge()
-    nuclear_charges = jnp.asarray([molecule.charge(i) for i in range(geom2d.shape[0])])
-    nelectrons = int(jnp.sum(nuclear_charges)) - charge
-    nfrzn = n_frozen_core(molecule, charge) if options['freeze_core'] else 0
+    geom_list = libint_interface.geometry(xyz_path)
+    geom = jnp.asarray(geom_list)
+    dim = geom.shape[0]
 
-    basis_set = psi4.core.BasisSet.build(molecule, 'BASIS', basis_name, puream=0)
-    nbf = basis_set.nbf()
+    charge = options['charge']
+    assert options['multiplicity'] == 1, "Multiplicity must be 1."
+    nuclear_charges = jnp.asarray(libint_interface.nuclear_charges(xyz_path))
+    nelectrons = int(jnp.sum(nuclear_charges)) - charge
+    nfrzn = n_frozen_core(geom, nuclear_charges, charge) if options['freeze_core'] else 0
+
+    nbf = libint_interface.nbf(basis_name, xyz_path)
     print("Number of basis functions: ", nbf)
+    basis_set = (basis_name, nbf)
 
     if 'f12' in method:
-        cabs_set = build_RIBS(molecule, basis_set, basis_name + '-cabs')
+        nri = libint_interface.nbf(basis_name + '-cabs', xyz_path)
+        cabs_set = (basis_name + '-cabs', nri)
 
     # Energy and full derivative tensor evaluations
     if not partial:
@@ -142,7 +145,7 @@ def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=N
             raise Exception("The length of the index coordinates given by 'partial' argument should be the same as the order of differentiation")
 
         # Estimate memory footprint of two electron integrals partial derivatives
-        natoms = molecule.natom()
+        natoms = geom.shape[0] // 3
         nderivs = get_required_deriv_vecs(natoms, deriv_order, partial).shape[0]
         ngigabytes = nbf**4 * 64 * 8 * nderivs / 1e9
         print("Estimated memory footprint from two-electron integral partial derivatives: {} GB".format(ngigabytes))
@@ -209,7 +212,7 @@ def compute(molecule, basis_name, method, options=None, deriv_order=0, partial=N
             partial_deriv = 0
         return jnp.round(partial_deriv, 10)
 
-def energy(molecule, basis_name, method, options=None):
+def energy(xyz_path, basis_name, method, options=None):
     """
     Call an energy method on a molecule and basis set.
 
@@ -251,10 +254,10 @@ def energy(molecule, basis_name, method, options=None):
     -------
     The electronic energy in a.u. (Hartrees)
     """
-    E = compute(molecule, basis_name, method, options)
+    E = compute(xyz_path, basis_name, method, options)
     return E
 
-def derivative(molecule, basis_name, method, deriv_order, options=None):
+def derivative(xyz_path, basis_name, method, deriv_order, options=None):
     """
     Compute the full Cartesian derivative tensor for a particular energy method, molecule, and basis set. 
 
@@ -300,10 +303,10 @@ def derivative(molecule, basis_name, method, deriv_order, options=None):
     deriv : float
         The requested derivative tensor, elements have units of Hartree/bohr^(n)
     """
-    deriv = compute(molecule, basis_name, method, options, deriv_order)
+    deriv = compute(xyz_path, basis_name, method, options, deriv_order)
     return deriv
 
-def partial_derivative(molecule, basis_name, method, deriv_order, partial, options=None):
+def partial_derivative(xyz_path, basis_name, method, deriv_order, partial, options=None):
     """
     Computes one particular nth-order partial derivative of the energy of an electronic structure method
     w.r.t. a set of cartesian coordinates. If you have N cartesian coordinates in your molecule, the nuclear derivative tensor
@@ -366,6 +369,6 @@ def partial_derivative(molecule, basis_name, method, deriv_order, partial, optio
     partial_deriv : float
         The requested partial derivative of the energy in units of Hartree/bohr^(n)
     """
-    partial_deriv = compute(molecule, basis_name, method, options, deriv_order, partial)
+    partial_deriv = compute(xyz_path, basis_name, method, options, deriv_order, partial)
     return partial_deriv
 

@@ -12,15 +12,13 @@ jax.config.update("jax_enable_x64", True)
 class TEI(object):
 
     def __init__(self, basis1, basis2, basis3, basis4, xyz_path, max_deriv_order, options, mode):
-        with open(xyz_path, 'r') as f:
-            tmp = f.read()
-        molecule = psi4.core.Molecule.from_string(tmp, 'xyz+')
-        natoms = molecule.natom()
+        f = open(xyz_path, 'r')
+        natoms = int(f.readline()[0])
 
-        nbf1 = basis1.nbf()
-        nbf2 = basis2.nbf()
-        nbf3 = basis3.nbf()
-        nbf4 = basis4.nbf()
+        nbf1 = basis1[1]
+        nbf2 = basis2[1]
+        nbf3 = basis3[1]
+        nbf4 = basis4[1]
 
         if mode == 'core' and max_deriv_order > 0:
             # A list of ERI derivative tensors, containing only unique elements

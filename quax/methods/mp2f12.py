@@ -2,7 +2,6 @@ import jax
 from jax.config import config; config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 from jax.lax import fori_loop
-import psi4
 import sys
 jnp.set_printoptions(threshold=sys.maxsize, linewidth=100)
 

@@ -12,13 +12,11 @@ jax.config.update("jax_enable_x64", True)
 class OEI(object):
 
     def __init__(self, basis1, basis2, xyz_path, max_deriv_order, mode):
-        with open(xyz_path, 'r') as f:
-            tmp = f.read()
-        molecule = psi4.core.Molecule.from_string(tmp, 'xyz+')
-        natoms = molecule.natom()
+        f = open(xyz_path, 'r')
+        natoms = int(f.readline()[0])
 
-        nbf1 = basis1.nbf()
-        nbf2 = basis2.nbf()
+        nbf1 = basis1[1]
+        nbf2 = basis2[1]
 
         if mode == 'core' and max_deriv_order > 0:
             # A list of OEI derivative tensors, containing only unique elements

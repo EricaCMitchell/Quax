@@ -15,13 +15,13 @@ def period_to_full_shell(p):
 
     return full_shell_values[p]
 
-def n_frozen_core(mol, Z_mol):
+def n_frozen_core(geom, nuclear_charges, Z_mol):
     nfrzn = 0
     mol_valence = -1 * Z_mol
     largest_shell = 0
 
-    for A in range(mol.natom()):
-        Z = mol.charge(A)
+    for A in range(geom.shape[0] // 3):
+        Z = nuclear_charges[A]
         current_shell = atom_to_period(Z)
         delta = period_to_full_shell(current_shell - 1)
 

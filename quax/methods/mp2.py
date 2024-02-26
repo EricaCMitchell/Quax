@@ -2,7 +2,6 @@ import jax
 from jax.config import config; config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 from jax.lax import fori_loop
-import psi4
 
 from .energy_utils import partial_tei_transformation, cartesian_product
 from .hartree_fock import restricted_hartree_fock

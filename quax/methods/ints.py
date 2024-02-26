@@ -16,7 +16,7 @@ from ..integrals import libint_interface
 def compute_integrals(geom, basis_set, xyz_path, deriv_order, options):
     # Load integral algo, decides to compute integrals in memory or use disk 
     algo = options['integral_algo']
-    basis_name = basis_set.name()
+    basis_name = basis_set[0]
     libint_interface.initialize(xyz_path, basis_name, basis_name, basis_name, basis_name, options['ints_tolerance'])
 
     if algo == 'libint_disk':
@@ -59,8 +59,8 @@ def compute_integrals(geom, basis_set, xyz_path, deriv_order, options):
 def compute_f12_oeints(geom, basis1, basis2, xyz_path, deriv_order, options, cabs):
     # Load integral algo, decides to compute integrals in memory or use disk
     algo = options['integral_algo']
-    basis1_name = basis1.name()
-    basis2_name = basis2.name()
+    basis1_name = basis1[0]
+    basis2_name = basis2[0]
     libint_interface.initialize(xyz_path, basis1_name, basis2_name, basis1_name, basis2_name, options['ints_tolerance'])
 
     if cabs:
@@ -119,10 +119,10 @@ def compute_f12_teints(geom, basis1, basis2, basis3, basis4, int_type, xyz_path,
     # Load integral algo, decides to compute integrals in memory or use disk
     algo = options['integral_algo']
     beta = options['beta']
-    basis1_name = basis1.name()
-    basis2_name = basis2.name()
-    basis3_name = basis3.name()
-    basis4_name = basis4.name()
+    basis1_name = basis1[0]
+    basis2_name = basis2[0]
+    basis3_name = basis3[0]
+    basis4_name = basis4[0]
     libint_interface.initialize(xyz_path, basis1_name, basis2_name, basis3_name, basis4_name, options['ints_tolerance'])
 
     if algo == 'libint_disk':
@@ -188,8 +188,8 @@ def check_oei_disk(int_type, basis1, basis2, deriv_order, address=None):
     if ((os.path.exists("oei_derivs.h5"))):
         print("Found currently existing one-electron integral derivatives in your working directory. Trying to use them.")
         oeifile = h5py.File('oei_derivs.h5', 'r')
-        nbf1 = basis1.nbf()
-        nbf2 = basis2.nbf()
+        nbf1 = basis1[1]
+        nbf2 = basis2[1]
 
         if int_type == "all":
             oei_name = ["overlap_" + str(nbf1) + "_" + str(nbf2) + "_deriv" + str(deriv_order),\
@@ -236,10 +236,10 @@ def check_tei_disk(int_type, basis1, basis2, basis3, basis4, deriv_order, addres
     if ((os.path.exists(int_type + "_derivs.h5"))):
         print("Found currently existing " + int_type + " integral derivatives in your working directory. Trying to use them.")
         erifile = h5py.File(int_type + '_derivs.h5', 'r')
-        nbf1 = basis1.nbf()
-        nbf2 = basis2.nbf()
-        nbf3 = basis3.nbf()
-        nbf4 = basis4.nbf()
+        nbf1 = basis1[1]
+        nbf2 = basis2[1]
+        nbf3 = basis3[1]
+        nbf4 = basis4[1]
 
         tei_name = int_type + "_" + str(nbf1) + "_" + str(nbf2)\
                             + "_" + str(nbf3) + "_" + str(nbf4) + "_deriv" + str(deriv_order)

@@ -28,9 +28,25 @@ std::vector<size_t> shell2bf_1, shell2bf_2, shell2bf_3, shell2bf_4;
 std::vector<long> shell2atom_1, shell2atom_2, shell2atom_3, shell2atom_4;
 size_t max_nprim;
 int max_l;
-int nthreads = 1;
+int nthreads;
 double threshold;
 double max_engine_precision;
+
+// Set number of OMP Threads
+void set_num_threads(int threads) {
+    nthreads = threads;
+#ifdef _OPENMP
+    omp_set_num_threads(threads);
+#endif
+}
+
+int get_num_threads() {
+    int threads = 1;
+#ifdef _OPENMP
+    threads = omp_get_max_threads();
+#endif
+    return threads;
+}
 
 // Creates atom objects from xyz file path
 std::vector<libint2::Atom> get_atoms(std::string xyzfilename) 
@@ -75,6 +91,41 @@ libint2::BasisSet make_ao_cabs(std::string obs_name, libint2::BasisSet cabs) {
     cabs = libint2::BasisSet(atoms, el_bases);
     cabs.set_pure(false);
     return cabs;
+}
+
+// Returns flattened array of geometry
+py::array geometry(std::string xyzfilename) {
+    libint2::initialize();
+    atoms = get_atoms(xyzfilename);
+
+    std::vector<double> result(atoms.size() * 3);
+
+    for (int i = 0; i < atoms.size(); i++) {
+        auto idx = i * 3;
+        result[  idx  ] = atoms[i].x;
+        result[idx + 1] = atoms[i].y;
+        result[idx + 2] = atoms[i].z;
+    }
+
+    libint2::finalize();
+
+    return py::array(result.size(), result.data());
+}
+
+// Returns nuclear charges
+py::array nuclear_charges(std::string xyzfilename) {
+    libint2::initialize();
+    atoms = get_atoms(xyzfilename);
+
+    std::vector<int> result(atoms.size());
+
+    for (int i = 0; i < atoms.size(); i++) {
+        result[i] = static_cast<int>(atoms[i].atomic_number);
+    }
+
+    libint2::finalize();
+
+    return py::array(result.size(), result.data());
 }
 
 // Returns number of basis functions
@@ -152,7 +203,7 @@ void initialize(std::string xyzfilename, std::string basis1, std::string basis2,
 
     // Get number of OMP threads
 #ifdef _OPENMP
-    nthreads = omp_get_max_threads();
+    nthreads = get_num_threads();
 #endif
 }
 
@@ -2267,6 +2318,11 @@ py::array eri_deriv_core(int deriv_order) {
 // bindings. the def() methods generates binding code that exposes new functions to Python.
 PYBIND11_MODULE(libint_interface, m) {
     m.doc() = "pybind11 libint interface to molecular integrals"; // optional module docstring
+    m.def("set_num_threads", &set_num_threads, "Sets OMP_NUM_THREADS environment");
+    m.def("get_num_threads", &get_num_threads, "Returns OMP_MAX_NUM_THREADS environment");
+    m.def("geometry", &geometry, "Returns molecular geometry");
+    m.def("nuclear_charges", &nuclear_charges, "Returns nuclear charges");
+    m.def("nbf", &nbf, "Returns number of basis functions");
     m.def("initialize", &initialize, "Initializes libint, builds geom and basis, assigns globals");
     m.def("finalize", &finalize, "Kills libint");
     m.def("compute_1e_int", &compute_1e_int, "Computes one-electron integrals with libint");
