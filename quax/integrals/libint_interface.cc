@@ -533,7 +533,14 @@ py::array compute_1e_int(std::string type) {
             }
         }
     }
-    return py::array(result.size(), result.data()); 
+
+    auto size = result.size();
+    auto data = result.data();
+    std::unique_ptr<std::vector<double>> result_ptr = std::make_unique<std::vector<double>>(std::move(result));
+    auto capsule = py::capsule(result_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    result_ptr.release();
+    return py::array(size, data, capsule);
 }
 
 // Computes two-electron integrals
@@ -700,9 +707,14 @@ py::array compute_2e_int(std::string type, double beta) {
             }
         }
     }
-    return py::array(result.size(), result.data());
-    // This apparently copies data, but it should be fine right?
-    // https://github.com/pybind/pybind11/issues/1042 there's a workaround
+
+    auto size = result.size();
+    auto data = result.data();
+    std::unique_ptr<std::vector<double>> result_ptr = std::make_unique<std::vector<double>>(std::move(result));
+    auto capsule = py::capsule(result_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    result_ptr.release();
+    return py::array(size, data, capsule);
 }
 
 // Computes nuclear derivatives of one-electron integrals 
@@ -841,7 +853,14 @@ py::array compute_1e_deriv(std::string type, std::vector<int> deriv_vec) {
             }
         }
     }
-    return py::array(result.size(), result.data()); 
+
+    auto size = result.size();
+    auto data = result.data();
+    std::unique_ptr<std::vector<double>> result_ptr = std::make_unique<std::vector<double>>(std::move(result));
+    auto capsule = py::capsule(result_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    result_ptr.release();
+    return py::array(size, data, capsule);
 }
 
 // Computes nuclear derivatives of two-electron integrals
@@ -1084,10 +1103,13 @@ py::array compute_2e_deriv(std::string type, double beta, std::vector<int> deriv
             }
         }
     }
-    // This is not the bottleneck
-    return py::array(result.size(), result.data()); 
-    // This apparently copies data, but it should be fine right?
-    // https://github.com/pybind/pybind11/issues/1042 there's a workaround
+    auto size = result.size();
+    auto data = result.data();
+    std::unique_ptr<std::vector<double>> result_ptr = std::make_unique<std::vector<double>>(std::move(result));
+    auto capsule = py::capsule(result_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    result_ptr.release();
+    return py::array(size, data, capsule);
 }
 
 // Write OEI derivatives up to `max_deriv_order` to disk
@@ -2105,7 +2127,29 @@ std::vector<py::array> oei_deriv_core(int deriv_order) {
             }
         } // Unique nuclear cartesian derivative indices loop
     } // shell duet loops
-    return {py::array(S.size(), S.data()), py::array(T.size(), T.data()), py::array(V.size(), V.data())}; // This apparently copies data, but it should be fine right? https://github.com/pybind/pybind11/issues/1042 there's a workaround
+
+    auto S_size = S.size();
+    auto S_data = S.data();
+    std::unique_ptr<std::vector<double>> S_ptr = std::make_unique<std::vector<double>>(std::move(S));
+    auto S_capsule = py::capsule(S_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    S_ptr.release();
+
+    auto T_size = T.size();
+    auto T_data = T.data();
+    std::unique_ptr<std::vector<double>> T_ptr = std::make_unique<std::vector<double>>(std::move(T));
+    auto T_capsule = py::capsule(T_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    T_ptr.release();
+
+    auto V_size = V.size();
+    auto V_data = V.data();
+    std::unique_ptr<std::vector<double>> V_ptr = std::make_unique<std::vector<double>>(std::move(V));
+    auto V_capsule = py::capsule(V_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    V_ptr.release();
+
+    return {py::array(S_size, S_data, S_capsule), py::array(T_size, T_data, T_capsule), py::array(V_size, V_data, V_capsule)};
 } // oei_deriv_core function
 
 // Computes a single 'deriv_order' derivative tensor of electron repulsion integrals, keeps everything in core memory
@@ -2310,7 +2354,14 @@ py::array eri_deriv_core(int deriv_order) {
             } // For every nuc_idx 0, nderivs_triu
         }
     } // shell quartet loops
-    return py::array(result.size(), result.data()); // This apparently copies data, but it should be fine right? https://github.com/pybind/pybind11/issues/1042 there's a workaround
+
+    auto size = result.size();
+    auto data = result.data();
+    std::unique_ptr<std::vector<double>> result_ptr = std::make_unique<std::vector<double>>(std::move(result));
+    auto capsule = py::capsule(result_ptr.get(),
+                     [](void *p) { std::unique_ptr<std::vector<double>>(reinterpret_cast<std::vector<double>*>(p)); });
+    result_ptr.release();
+    return py::array(size, data, capsule);
 } // eri_deriv_core function
 
 // Define module named 'libint_interface' which can be imported with python
