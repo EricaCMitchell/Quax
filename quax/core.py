@@ -3,10 +3,7 @@ from jax import jacfwd
 from jax.config import config
 config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import psi4
 import numpy as np
-import os
-import h5py
 
 from .integrals import libint_interface
 from .methods.hartree_fock import restricted_hartree_fock
@@ -15,8 +12,6 @@ from .methods.mp2f12 import restricted_mp2_f12
 from .methods.ccsd import rccsd
 from .methods.ccsd_t import rccsd_t
 from .utils import get_required_deriv_vecs, n_frozen_core
-
-psi4.core.be_quiet()
 
 def check_options(options):
     """
@@ -218,30 +213,11 @@ def energy(xyz_path, basis_name, method, options=None):
 
     Parameters
     ----------
-    molecule : psi4.Molecule
-        A Psi4 Molecule object containing geometry, charge, multiplicity, and optionally units in a multiline string. 
-        Examples:
-        molecule = psi4.geometry('''
-                                 0 1
-                                 H 0.0 0.0 -0.55000000000
-                                 H 0.0 0.0  0.55000000000
-                                 units bohr
-                                 ''')
-
-        molecule = psi4.geometry('''
-                                 0 1
-                                 O
-                                 H 1 r1
-                                 H 1 r2 2 a1
-                        
-                                 r1 = 1.0
-                                 r2 = 1.0
-                                 a1 = 104.5
-                                 units ang
-                                 ''')
+    xyz_path : str
+        A string representing the location of an standard .xyz file with coordinates in Angstrom
 
     basis_name : str
-        A string representing a Gaussian basis set available in Psi4's basis set library (also needs to be in Libint's basis set library if using Libint interface).
+        A string representing a Gaussian basis set available in Libint2's basis set library (also needs to be in Libint's basis set library if using Libint interface).
 
     method : str
         A string representing a quantum chemistry method supported in Quax
@@ -263,30 +239,11 @@ def derivative(xyz_path, basis_name, method, deriv_order, options=None):
 
     Parameters
     ----------
-    molecule : psi4.Molecule
-        A Psi4 Molecule object containing geometry, charge, multiplicity in a multiline string. 
-        Examples:
-        molecule = psi4.geometry('''
-                                 0 1
-                                 H 0.0 0.0 -0.55000000000
-                                 H 0.0 0.0  0.55000000000
-                                 units bohr
-                                 ''')
-
-        molecule = psi4.geometry('''
-                                 0 1
-                                 O
-                                 H 1 r1
-                                 H 1 r2 2 a1
-                        
-                                 r1 = 1.0
-                                 r2 = 1.0
-                                 a1 = 104.5
-                                 units ang
-                                 ''')
+    xyz_path : str
+        A string representing the location of an standard .xyz file with coordinates in Angstrom
 
     basis_name : str
-        A string representing a Gaussian basis set available in Psi4's basis set library (also needs to be in Libint's basis set library if using Libint interface).
+        A string representing a Gaussian basis set available in Libint2's basis set library (also needs to be in Libint's basis set library if using Libint interface).
 
     method : str
         A string representing a quantum chemistry method supported in Quax
@@ -320,30 +277,11 @@ def partial_derivative(xyz_path, basis_name, method, deriv_order, partial, optio
 
     Parameters
     ----------
-    molecule : psi4.Molecule
-        A Psi4 Molecule object containing geometry, charge, multiplicity in a multiline string. 
-        Examples:
-        molecule = psi4.geometry('''
-                                 0 1
-                                 H 0.0 0.0 -0.55000000000
-                                 H 0.0 0.0  0.55000000000
-                                 units bohr
-                                 ''')
-
-        molecule = psi4.geometry('''
-                                 0 1
-                                 O
-                                 H 1 r1
-                                 H 1 r2 2 a1
-                        
-                                 r1 = 1.0
-                                 r2 = 1.0
-                                 a1 = 104.5
-                                 units ang
-                                 ''')
+    xyz_path : str
+        A string representing the location of an standard .xyz file with coordinates in Angstrom
 
     basis_name : str
-        A string representing a Gaussian basis set available in Psi4's basis set library (also needs to be in Libint's basis set library if using Libint interface).
+        A string representing a Gaussian basis set available in Libint2's basis set library (also needs to be in Libint's basis set library if using Libint interface).
 
     method : str
         A string representing a quantum chemistry method supported in Quax e.g. 'scf', 'mp2' 'ccsd(t)'

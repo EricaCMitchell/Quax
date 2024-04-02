@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import numpy as np
 import h5py
 import os
-import psi4
 from . import libint_interface
 from ..utils import get_deriv_vec_idx, how_many_derivs
 
@@ -32,7 +31,6 @@ class OEI(object):
                 self.overlap_derivatives.append(oei_deriv[0].reshape(n_unique_derivs, nbf1, nbf2))
                 self.kinetic_derivatives.append(oei_deriv[1].reshape(n_unique_derivs, nbf1, nbf2))
                 self.potential_derivatives.append(oei_deriv[2].reshape(n_unique_derivs, nbf1, nbf2))
-
 
         self.mode = mode
         self.nbf1 = nbf1

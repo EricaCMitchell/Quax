@@ -3,11 +3,11 @@ import jax.numpy as jnp
 from jax.lax import fori_loop
 import functools
 
-from .ints import compute_f12_oeints
+from .ints import F12_Integrals
 from .energy_utils import symmetric_orthogonalization
 from ..integrals import libint_interface
 
-def build_CABS(geom, basis_set, cabs_set, xyz_path, deriv_order, options):
+def build_CABS(Ints_Obj, basis_set, cabs_set, options):
     """
     Builds and returns 
     CABS transformation matrix
@@ -17,7 +17,7 @@ def build_CABS(geom, basis_set, cabs_set, xyz_path, deriv_order, options):
     libint_interface.set_num_threads(1)
 
     # Orthogonalize combined basis set
-    S_ao_ribs_ribs = compute_f12_oeints(geom, cabs_set, cabs_set, xyz_path, deriv_order, options, True)
+    S_ao_ribs_ribs = Ints_Obj.compute_f12_oeints(cabs_set, cabs_set, True)
 
     if options['spectral_shift']:
         convergence = 1e-10
@@ -28,7 +28,7 @@ def build_CABS(geom, basis_set, cabs_set, xyz_path, deriv_order, options):
     C_ribs = symmetric_orthogonalization(S_ao_ribs_ribs, 1.0e-8)
 
     # Compute the overlap matrix between OBS and RIBS
-    S_ao_obs_ribs = compute_f12_oeints(geom, basis_set, cabs_set, xyz_path, deriv_order, options, True)
+    S_ao_obs_ribs = Ints_Obj.compute_f12_oeints(basis_set, cabs_set, True)
 
     _, S, Vt = svd_full(S_ao_obs_ribs @ C_ribs)
 

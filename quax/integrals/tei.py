@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import numpy as np
 import h5py
 import os
-import psi4
 from . import libint_interface
 from ..utils import get_deriv_vec_idx, how_many_derivs
 
@@ -11,7 +10,7 @@ jax.config.update("jax_enable_x64", True)
 
 class TEI(object):
 
-    def __init__(self, basis1, basis2, basis3, basis4, xyz_path, max_deriv_order, options, mode):
+    def __init__(self, basis1, basis2, basis3, basis4, xyz_path, max_deriv_order, mode):
         f = open(xyz_path, 'r')
         natoms = int(f.readline()[0])
 
