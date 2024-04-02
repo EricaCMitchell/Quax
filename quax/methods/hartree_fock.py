@@ -21,9 +21,8 @@ def restricted_hartree_fock(geom, basis_set, nelectrons, nuclear_charges, xyz_pa
         jk_build = jax.vmap(jax.vmap(lambda x,y: jnp.tensordot(x, y, axes=[(0,1), (0,1)]), in_axes=(0, None)), in_axes=(0, None))
 
     Int_Obj = Integrals(geom, basis_set, xyz_path, deriv_order, options)
-    Int_Obj.initialize()
+    S, T, V, G = Int_Obj.compute_integrals()
 
-    S = Int_Obj.compute_oeint(False)
     # Canonical orthogonalization via cholesky decomposition
     A = cholesky_orthogonalization(S)
 
@@ -40,7 +39,6 @@ def restricted_hartree_fock(geom, basis_set, nelectrons, nuclear_charges, xyz_pa
     # Shifting eigenspectrum requires lower convergence.
     convergence = jax.lax.cond(spectral_shift, lambda: 1.0e-9, lambda: 1.0e-10)
 
-    T, V = Int_Obj.compute_oeint(True)
     H = T + V
     Enuc = nuclear_repulsion(geom.reshape(-1,3), nuclear_charges)
     
@@ -58,9 +56,6 @@ def restricted_hartree_fock(geom, basis_set, nelectrons, nuclear_charges, xyz_pa
         diis_e = jnp.einsum('ij,jk,kl->il', F, D, S) - jnp.einsum('ij,jk,kl->il', S, D, F)
         diis_e = A @ diis_e @ A
         return jnp.mean(diis_e ** 2) ** 0.5
-    
-    G = Int_Obj.compute_teint()
-    Int_Obj.finalize()
     
     def scf_procedure(carry):
         iter, de_, drms_, eps_, C_, D_old, D_, e_old = carry
